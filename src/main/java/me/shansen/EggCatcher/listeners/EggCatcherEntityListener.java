@@ -90,7 +90,7 @@ public class EggCatcherEntityListener implements Listener {
             ItemStack itemCost = getItemCost(player, eggType.getFriendlyName());
 
             // check that the player can actually catch this mob
-            if (!playerHasRequirements(event, player, vaultCost, itemCost)) {
+            if (!captureSuccess(event, player, vaultCost, itemCost)) {
                 return;
             }
 
@@ -99,23 +99,7 @@ public class EggCatcherEntityListener implements Listener {
                 player.sendMessage(config.messages.catchChanceSuccess);
             }
 
-            // withdraw money
-            if (vaultCost > 0) {
-                EggCatcher.economy.withdrawPlayer(player, vaultCost);
-
-                if (!config.vaultTargetBankAccount.isEmpty()) {
-                    EggCatcher.economy.bankDeposit(config.vaultTargetBankAccount, vaultCost);
-                }
-
-                player.sendMessage(String.format(config.messages.vaultSuccess, vaultCost));
-            }
-
-            // withdraw items
-            if (itemCost != null) {
-                player.sendMessage(String.format(config.messages.itemCostSuccess,
-                        String.valueOf(itemCost.getAmount())));
-                player.getInventory().removeItem(itemCost);
-            }
+            chargePlayer(player, vaultCost, itemCost);
         } else {
             // Dispenser
             if (!config.nonPlayerCatching) {
@@ -191,7 +175,7 @@ public class EggCatcherEntityListener implements Listener {
      * @param itemCost  item cost to capture mob
      * @return if player should catch the mob
      */
-    private boolean playerHasRequirements(EggCaptureEvent event, Player player, double vaultCost, ItemStack itemCost) {
+    private boolean captureSuccess(EggCaptureEvent event, Player player, double vaultCost, ItemStack itemCost) {
         LivingEntity entity = (LivingEntity) event.getEntity();
         String eggType = Objects.requireNonNull(EggType.getEggType(event.getEntity())).getFriendlyName();
         double entityHealthRequirement = getEntityHealthRequirement(eggType);
@@ -211,6 +195,10 @@ public class EggCatcherEntityListener implements Listener {
         } else if (config.useCatchChance && Math.random() * 100 > config.catchChances.get(eggType)) {
             hasRequirements = false;
             message = config.messages.catchChanceFail;
+
+            if (config.costOnChanceFail) {
+                chargePlayer(player, vaultCost, itemCost);
+            }
         } else if (vaultCost > 0 && !EggCatcher.economy.has(player, vaultCost)) {
             hasRequirements = false;
             message = String.format(config.messages.vaultFail, vaultCost);
@@ -231,6 +219,33 @@ public class EggCatcherEntityListener implements Listener {
         }
 
         return hasRequirements;
+    }
+
+    /**
+     * Charge the player for a mob capture (if there is a cost)
+     *
+     * @param player    player to charge
+     * @param vaultCost vault (economy) cost to charge
+     * @param itemCost  item stack cost to charge
+     */
+    private void chargePlayer(Player player, double vaultCost, ItemStack itemCost) {
+        // withdraw money
+        if (vaultCost > 0) {
+            EggCatcher.economy.withdrawPlayer(player, vaultCost);
+
+            if (!config.vaultTargetBankAccount.isEmpty()) {
+                EggCatcher.economy.bankDeposit(config.vaultTargetBankAccount, vaultCost);
+            }
+
+            player.sendMessage(String.format(config.messages.vaultSuccess, vaultCost));
+        }
+
+        // withdraw items
+        if (itemCost != null) {
+            player.sendMessage(String.format(config.messages.itemCostSuccess,
+                    String.valueOf(itemCost.getAmount())));
+            player.getInventory().removeItem(itemCost);
+        }
     }
 
     /**

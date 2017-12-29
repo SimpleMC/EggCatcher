@@ -28,6 +28,7 @@ public class EggCatcherConfig {
     public final boolean spawnChickenOnFail;
     public final boolean spawnChickenOnSuccess;
     public final boolean deleteVillagerInventoryOnCatch;
+    public final boolean costOnChanceFail;
     public final boolean logCaptures;
     public final Map<String, Double> catchChances;
     public final Map<String, Double> vaultCosts;
@@ -52,6 +53,7 @@ public class EggCatcherConfig {
         spawnChickenOnSuccess = config.getBoolean("SpawnChickenOnSuccess", false);
         vaultTargetBankAccount = config.getString("VaultTargetBankAccount", "");
         deleteVillagerInventoryOnCatch = config.getBoolean("DeleteVillagerInventoryOnCatch", false);
+        costOnChanceFail = config.getBoolean("CostOnChanceFail", false);
         logCaptures = config.getBoolean("LogEggCaptures", false);
 
         // config sub-sections
